@@ -5,15 +5,13 @@ from src.clf import \
     Piece, Learner
 
 ################################################################################
-################################################################################
-################################################################################
 
-class TestGenerator1D(unittest.TestCase):
+class TestGenerator(unittest.TestCase):
     def __init__(self, methodName: str = ...):
         super().__init__(methodName)
+        print("Test Generator")
 
-    def test_set(self):
-        print("\nTest Generator 1D")
+    def test_1D_1(self):
         gen = Generator(1, 5, 5)
 
         gen.xs_inside.append(np.array([1]))
@@ -33,6 +31,7 @@ class TestGenerator1D(unittest.TestCase):
 
         self.assertFalse(status)
 
+    def test_1D_2(self):
         gen = Generator(1, 2, 5)
 
         gen.xs_inside.append(np.array([1]))
@@ -51,15 +50,8 @@ class TestGenerator1D(unittest.TestCase):
         status, afs = gen.find_candidate()
 
         self.assertFalse(status)
-
-################################################################################
-
-class TestGenerator2D(unittest.TestCase):
-    def __init__(self, methodName: str = ...):
-        super().__init__(methodName)
-
-    def test_set(self):
-        print("\nTest Generator 2D")
+    
+    def test_2D_1(self):
         gen = Generator(2, 3, 100)
 
         gen.xs_inside.append(np.array([-1, 0]))
@@ -80,18 +72,16 @@ class TestGenerator2D(unittest.TestCase):
         status, afs = gen.find_candidate()
 
         self.assertTrue(status)
-        self.assertEqual(len(afs), 4)
+        self.assertEqual(len(afs), 4)    
 
 ################################################################################
-################################################################################
-################################################################################
 
-class TestVerifierInside2D(unittest.TestCase):
+class TestVerifier(unittest.TestCase):
     def __init__(self, methodName: str = ...):
         super().__init__(methodName)
+        print("Test Verifier")
 
-    def test_set(self):
-        print("\nTest Verifier Inside 2D")
+    def test_inside_2D_1(self):
         verif = VerifierInclude(2, 100)
 
         verif.afs_inside.append(AffForm(np.array([-1, -1]), -5))
@@ -115,14 +105,7 @@ class TestVerifierInside2D(unittest.TestCase):
         self.assertTrue(status)
         self.assertEqual(len(x), 2)
 
-################################################################################
-
-class TestVerifierOutside2D(unittest.TestCase):
-    def __init__(self, methodName: str = ...):
-        super().__init__(methodName)
-
-    def test_set(self):
-        print("\nTest Verifier Outside 2D")
+    def test_outside_2D_1(self):
         verif = VerifierInclude(2, 100)
 
         verif.afs_outside.append(AffForm(np.array([-1, 0]), -5))
@@ -146,16 +129,10 @@ class TestVerifierOutside2D(unittest.TestCase):
         self.assertTrue(status)
         self.assertEqual(len(x), 2)
 
-################################################################################
-
-class TestVerifierTransition2D(unittest.TestCase):
-    def __init__(self, methodName: str = ...):
-        super().__init__(methodName)
-
-    def test_set(self):
-        print("\nTest Verifier Transition 2D")
+    def test_transistion_2D_1(self):
         A = np.array([[0, -1], [+1, 0]])
         b = np.array([2, -2])
+
         verif = VerifierTransition(2, A, b, 100)
 
         verif.afs_dom.append(AffForm(np.array([-1, 0]), 0))
@@ -177,15 +154,13 @@ class TestVerifierTransition2D(unittest.TestCase):
         self.assertFalse(status)
 
 ################################################################################
-################################################################################
-################################################################################
  
 class TestLearner2D(unittest.TestCase):
     def __init__(self, methodName: str = ...):
         super().__init__(methodName)
+        print("Test Learner")
 
-    def test_set_1(self):
-        print("\nTest Learner 2D 1")
+    def test_2D_1(self):
         # 2D, 3 affine functions
         lear = Learner(2, 3, 100, 100)
         # rot +90 deg, trans (+2, -2)
@@ -212,8 +187,7 @@ class TestLearner2D(unittest.TestCase):
 
         self.assertIsNone(afs)
 
-    def test_set_2(self):
-        print("\nTest Learner 2D 2")
+    def test_2D_2(self):
         # 2D, 3 affine functions
         lear = Learner(2, 3, 3, 100)
         # rot +90 deg, trans (+1, 0)

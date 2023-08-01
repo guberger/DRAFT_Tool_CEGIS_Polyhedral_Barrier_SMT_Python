@@ -189,7 +189,7 @@ class Learner:
                 print("Max iter reached")
                 return None
 
-            print('\nIter %5d\n - Generate...' % iter, end='', flush=True)
+            print('Iter %5d\n - Generate...' % iter, end='', flush=True)
 
             status, afs_inv = gen.find_candidate()
             print(' done')
@@ -198,7 +198,7 @@ class Learner:
                 print("Infeasible")
                 return None
 
-            print('\n - Verify Inside...', end='', flush=True)
+            print(' - Verify Inside...', end='', flush=True)
             verif_in.afs_outside.clear()
             verif_in.afs_outside.extend(afs_inv)
             status, x = verif_in.check()
@@ -209,7 +209,7 @@ class Learner:
             else:
                 print(' No CE found')
 
-            print('\n - Verify Outside...', end='', flush=True)
+            print(' - Verify Outside...', end='', flush=True)
             verif_out.afs_inside.clear()
             verif_out.afs_inside.extend(afs_inv)
             status, x = verif_out.check()
@@ -220,7 +220,7 @@ class Learner:
             else:
                 print(' No CE found')
 
-            print('\n - Verify Transition...', end='', flush=True)
+            print(' - Verify Transition...', end='', flush=True)
             status = False
             for verif_trans in verifs_trans:
                 verif_trans.afs_inv.clear()
