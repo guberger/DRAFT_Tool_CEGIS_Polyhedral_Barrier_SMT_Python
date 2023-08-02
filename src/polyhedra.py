@@ -6,7 +6,7 @@ class AffForm:
         self.beta = beta
 
     def __repr__(self):
-        return "<Affine form a:%s, beta:%s>" % (self.a, self.beta)
+        return "<AF a:%s, beta:%s>" % (self.a, self.beta)
 
     def eval(self, x):
         return np.dot(self.a, x) + self.beta

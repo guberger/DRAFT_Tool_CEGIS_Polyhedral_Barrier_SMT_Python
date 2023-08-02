@@ -3,10 +3,11 @@ import z3
 from .polyhedra import AffForm
 
 class Generator:
-    def __init__(self, dim, naf, cmax):
+    def __init__(self, dim, naf, eps, betamax):
         self.dim = dim
         self.naf = naf
-        self.cmax = cmax
+        self.eps = eps
+        self.betamax = betamax
         self.xs_inside = []
         self.xys_transition = []
         self.xs_outside = []
@@ -16,43 +17,43 @@ class Generator:
         solver = z3.Solver(ctx=ctx)
         afs = [AffForm(
             np.array([
-                z3.Int("a" + str(k) + "[" + str(i) + "]", ctx=ctx)
+                z3.Real("a" + str(k) + "[" + str(i) + "]", ctx=ctx)
                 for i in range(self.dim)
             ]),
-            z3.Int("b" + str(k), ctx=ctx)
+            z3.Real("b" + str(k), ctx=ctx)
         ) for k in range(self.naf)]
         
         for af in afs:
             for ai in af.a:
-                solver.add(ai <= +self.cmax)
-                solver.add(ai >= -self.cmax)
-            solver.add(af.beta <= +self.cmax)
-            solver.add(af.beta >= -self.cmax)
+                solver.add(ai <= +1)
+                solver.add(ai >= -1)
+            solver.add(af.beta <= +self.betamax)
+            solver.add(af.beta >= -self.betamax)
             
         for x in self.xs_inside:
             for af in afs:
-                solver.add(af.eval(x) <= 0)
+                solver.add(af.eval(x) <= -self.eps)
             
         for x in self.xs_outside:
             cons = []
             for af in afs:
-                cons.append(af.eval(x) > 0)
+                cons.append(af.eval(x) >= +self.eps)
             solver.add(z3.Or(cons))
 
         for (x, y) in self.xys_transition:
             cons_x = []
             cons_y = []
             for af in afs:
-                cons_x.append(af.eval(x) <= 0)
-                cons_y.append(af.eval(y) <= 0)
+                cons_x.append(af.eval(x) <= +self.eps)
+                cons_y.append(af.eval(y) <= -self.eps)
             solver.add(z3.Implies(z3.And(cons_x), z3.And(cons_y)))
 
         res = solver.check()
         if res == z3.sat:
             model = solver.model()
             afs_opt = [AffForm(
-                np.array([model[ai].as_long() for ai in af.a]),
-                model[af.beta].as_long()
+                np.array([float(model[ai].as_fraction()) for ai in af.a]),
+                float(model[af.beta].as_fraction())
             ) for af in afs]
             return True, afs_opt
         else:
