@@ -19,7 +19,7 @@ class TestBasicLearner(unittest.TestCase):
         b = np.array([0, 0])
         lear.pieces.append(Piece(A, b))
 
-        # init Rect[(0, 0), (1, 1)]
+        # init Empty
         lear.afs_init.append(AffForm(np.array([-1, 0]), 1))
         lear.afs_init.append(AffForm(np.array([+1, 0]), 1))
         # safe Rect[(-2, -2)] & (x1 + x2 >= -2)
@@ -68,6 +68,5 @@ class TestBasicLearner(unittest.TestCase):
         self.assertIsNotNone(afs)
         print(afs)
         
-
 if __name__ == '__main__':
     unittest.main()
