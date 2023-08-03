@@ -7,12 +7,12 @@ from src.system import Piece
 from src.learner import Learner
 
 # 2D, 3 affine functions
-lear = Learner(2, 10, 0.15, 100, 10)
+lear = Learner(2, 5, False, 0.15, None, 100, False, 10)
 
 def rot_mat(theta):
     return np.array([[cos(theta), -sin(theta)], [+sin(theta), cos(theta)]])
 
-alpha = 0.8
+alpha = 0.5
 theta = pi/5
 A = alpha*rot_mat(theta)
 b = np.array([0, 0])

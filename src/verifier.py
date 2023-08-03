@@ -1,12 +1,13 @@
 import numpy as np
 import z3
-
-def get_float_vec(model, v):
-    return np.array([float(model[vi].as_fraction()) for vi in v])
+from .z3utils import get_val_int, get_val_real
 
 class VerifierInclude:
-    def __init__(self, dim, xmax):
+    def __init__(self, dim, isint, xmax):
         self.dim = dim
+        self.isint = isint
+        if self.isint:
+            assert isinstance(xmax, int)
         self.xmax = xmax
         self.afs_inside = []
         self.afs_outside = []
@@ -14,8 +15,10 @@ class VerifierInclude:
     def check(self):
         ctx = z3.Context()
         solver = z3.Solver(ctx=ctx)
+        make_var = z3.Int if self.isint else z3.Real
         x = np.array([
-            z3.Real("x" + "[" + str(i) + "]", ctx=ctx) for i in range(self.dim)
+            make_var("x" + "[" + str(i) + "]", ctx=ctx)
+            for i in range(self.dim)
         ])
         
         for xi in x:
@@ -33,14 +36,18 @@ class VerifierInclude:
         res = solver.check()
         if res == z3.sat:
             model = solver.model()
-            x_opt = get_float_vec(model, x)
+            get_val = get_val_int if self.isint else get_val_real
+            x_opt = np.array([get_val(model, xi) for xi in x])
             return True, x_opt
         else:
             return False, None
         
 class VerifierTransition:
-    def __init__(self, dim, xmax):
+    def __init__(self, dim, isint, xmax):
         self.dim = dim
+        self.isint = isint
+        if self.isint:
+            assert isinstance(xmax, int)
         self.xmax = xmax
         self.pieces = []
         self.afs_inv = []
@@ -48,11 +55,14 @@ class VerifierTransition:
     def check(self):
         ctx = z3.Context()
         solver = z3.Solver(ctx=ctx)
+        make_var = z3.Int if self.isint else z3.Real
         x = np.array([
-            z3.Real("x" + "[" + str(i) + "]", ctx=ctx) for i in range(self.dim)
+            make_var("x" + "[" + str(i) + "]", ctx=ctx)
+            for i in range(self.dim)
         ])
         y = np.array([
-            z3.Real("y" + "[" + str(i) + "]", ctx=ctx) for i in range(self.dim)
+            make_var("y" + "[" + str(i) + "]", ctx=ctx)
+            for i in range(self.dim)
         ])
         
         for xi in x:
@@ -75,8 +85,9 @@ class VerifierTransition:
         res = solver.check()
         if res == z3.sat:
             model = solver.model()
-            x_opt = get_float_vec(model, x)
-            y_opt = get_float_vec(model, y)
+            get_val = get_val_int if self.isint else get_val_real
+            x_opt = np.array([get_val(model, xi) for xi in x])
+            y_opt = np.array([get_val(model, yi) for yi in y])
             return True, x_opt, y_opt
         else:
             return False, None, None

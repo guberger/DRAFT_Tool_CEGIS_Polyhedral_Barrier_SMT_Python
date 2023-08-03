@@ -6,23 +6,27 @@ class LearnerError(Exception):
         super().__init__(*args)
 
 class Learner:
-    def __init__(self, dim, naf, eps, betamax, xmax):
+    def __init__(self, dim, naf, isintg, eps, amax, betamax, isintv, xmax):
         self.dim = dim
         self.naf = naf
+        self.isintg = isintg
         self.eps = eps
+        self.amax = amax
         self.betamax = betamax
+        self.isintv = isintv
         self.xmax = xmax
         self.pieces = []
         self.afs_init = []
         self.afs_safe = []
 
     def find_invariant(self, iter_max):
-        gen = Generator(self.dim, self.naf, self.eps, self.betamax)
-        verif_in = VerifierInclude(self.dim, self.xmax)
+        gen = Generator(self.dim, self.naf, self.isintg,
+                        self.eps, self.amax, self.betamax)
+        verif_in = VerifierInclude(self.dim, self.isintv, self.xmax)
         verif_in.afs_inside.extend(self.afs_init)
-        verif_out = VerifierInclude(self.dim, self.xmax)
+        verif_out = VerifierInclude(self.dim, self.isintv, self.xmax)
         verif_out.afs_outside.extend(self.afs_safe)
-        verif_trans = VerifierTransition(self.dim, self.xmax)
+        verif_trans = VerifierTransition(self.dim, self.isintv, self.xmax)
         verif_trans.pieces.extend(self.pieces)
         
         iter = 0
