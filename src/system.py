@@ -1,5 +1,5 @@
 class Piece:
-    def __init__(self, A, b):
+    def __init__(self, A, b, rdom):
         self.A = A
         self.b = b
-        self.afs_dom = []
+        self.rdom = rdom

@@ -3,14 +3,14 @@ import z3
 from .z3utils import get_val_int, get_val_real
 
 class VerifierInclude:
-    def __init__(self, dim, isint, xmax):
+    def __init__(self, dim, isint, xmax, rin, rout):
         self.dim = dim
         self.isint = isint
         if self.isint:
             assert isinstance(xmax, int)
         self.xmax = xmax
-        self.afs_inside = []
-        self.afs_outside = []
+        self.rin = rin
+        self.rout = rout
 
     def check(self):
         ctx = z3.Context()
@@ -25,13 +25,21 @@ class VerifierInclude:
             solver.add(xi <= +self.xmax)
             solver.add(xi >= -self.xmax)
 
-        cons_inside = []
-        for af in self.afs_inside:
-            cons_inside.append(af.eval(x) <= 0)
-        cons_outside = []
-        for af in self.afs_outside:
-            cons_outside.append(af.eval(x) > 0)
-        solver.add(z3.And(z3.And(cons_inside), z3.Or(cons_outside)))
+        cons_A = []
+        for p in self.rin.ps:
+            cons_ = []
+            for af in p.afs:
+                cons_.append(af.eval(x) <= 0)
+            cons_A.append(z3.And(cons_, ctx))
+        con_A = z3.Or(cons_A, ctx)
+        cons_B = []
+        for p in self.rout.ps:
+            cons_ = []
+            for af in p.afs:
+                cons_.append(af.eval(x) < 0)
+            cons_B.append(z3.And(cons_, ctx))
+        con_B = z3.Or(cons_B, ctx)
+        solver.add(z3.And(con_A, con_B))
 
         res = solver.check()
         if res == z3.sat:
@@ -43,14 +51,14 @@ class VerifierInclude:
             return False, None
         
 class VerifierTransition:
-    def __init__(self, dim, isint, xmax):
+    def __init__(self, dim, isint, xmax, pieces, rinv):
         self.dim = dim
         self.isint = isint
         if self.isint:
             assert isinstance(xmax, int)
         self.xmax = xmax
-        self.pieces = []
-        self.afs_inv = []
+        self.pieces = pieces
+        self.rinv = rinv
 
     def check(self):
         ctx = z3.Context()
@@ -69,18 +77,33 @@ class VerifierTransition:
             solver.add(xi <= +self.xmax)
             solver.add(xi >= -self.xmax)
 
-        cons = []
+        all_cons = []
         for piece in self.pieces:
             z = y - (piece.A @ x + piece.b)
-            cons_pre = [zi == 0 for zi in z]
-            cons_post = []
-            for af in piece.afs_dom:
-                cons_pre.append(af.eval(x) <= 0)
-            for af in self.afs_inv:
-                cons_pre.append(af.eval(x) <= 0)
-                cons_post.append(af.eval(y) <= 0)
-            cons.append(z3.Implies(z3.And(cons_pre), z3.And(cons_post)))
-        solver.add(z3.Not(z3.And(cons)))
+            con_trans = z3.And([zi == 0 for zi in z])
+            cons_dom = []
+            for p in piece.rdom.ps:
+                cons_ = []
+                for af in p.afs:
+                    cons_.append(af.eval(x) <= 0)
+                cons_dom.append(z3.And(cons_, ctx))
+            con_dom = z3.Or(cons_dom, ctx)
+            cons_inv_x = []
+            cons_inv_y = []
+            for p in self.rinv.ps:
+                cons_x_ = []
+                cons_y_ = []
+                for af in p.afs:
+                    cons_x_.append(af.eval(x) <= 0)
+                    cons_y_.append(af.eval(y) <= 0)
+                cons_inv_x.append(z3.And(cons_x_, ctx))
+                cons_inv_y.append(z3.And(cons_y_, ctx))
+            con_inv_x = z3.Or(cons_inv_x, ctx)
+            con_inv_y = z3.Or(cons_inv_y, ctx)
+            con_A = z3.And(con_trans, con_dom, con_inv_x)
+            con_B = con_inv_y
+            all_cons.append(z3.Implies(con_A, con_B))
+        solver.add(z3.Not(z3.And(all_cons, ctx)))
 
         res = solver.check()
         if res == z3.sat:

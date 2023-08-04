@@ -1,3 +1,4 @@
+from .polyhedra import AffForm, Polyhedron, Region
 from .generator import Generator
 from .verifier import VerifierInclude, VerifierTransition
 
@@ -6,7 +7,8 @@ class LearnerError(Exception):
         super().__init__(*args)
 
 class Learner:
-    def __init__(self, dim, naf, isintg, eps, amax, betamax, isintv, xmax):
+    def __init__(self, dim, naf, isintg, eps, amax, betamax, isintv, xmax,
+                 pieces, rinit, runsafe):
         self.dim = dim
         self.naf = naf
         self.isintg = isintg
@@ -15,19 +17,19 @@ class Learner:
         self.betamax = betamax
         self.isintv = isintv
         self.xmax = xmax
-        self.pieces = []
-        self.afs_init = []
-        self.afs_safe = []
+        self.pieces = pieces
+        self.rinit = rinit
+        self.runsafe = runsafe
 
     def find_invariant(self, iter_max):
         gen = Generator(self.dim, self.naf, self.isintg,
                         self.eps, self.amax, self.betamax)
-        verif_in = VerifierInclude(self.dim, self.isintv, self.xmax)
-        verif_in.afs_inside.extend(self.afs_init)
-        verif_out = VerifierInclude(self.dim, self.isintv, self.xmax)
-        verif_out.afs_outside.extend(self.afs_safe)
-        verif_trans = VerifierTransition(self.dim, self.isintv, self.xmax)
-        verif_trans.pieces.extend(self.pieces)
+        verif_in = VerifierInclude(self.dim, self.isintv, self.xmax,
+                                   self.rinit, Region([]))
+        verif_out = VerifierInclude(self.dim, self.isintv, self.xmax,
+                                    Region(Polyhedron([])), self.runsafe)
+        verif_trans = VerifierTransition(self.dim, self.isintv, self.xmax,
+                                         self.pieces, Region(Polyhedron([])))
         
         iter = 0
 
@@ -39,7 +41,7 @@ class Learner:
 
             print('Iter %d\n - Generate...' % iter, end='', flush=True)
 
-            status, afs_inv = gen.find_candidate()
+            status, pinv = gen.find_candidate()
             print(' done')
 
             if not status:
@@ -47,8 +49,10 @@ class Learner:
                 return None
 
             print(' - Verify Inside...', end='', flush=True)
-            verif_in.afs_outside.clear()
-            verif_in.afs_outside.extend(afs_inv)
+            verif_in.rout = Region([
+                Polyhedron([AffForm(-af.a, -af.beta)])
+                for af in pinv.afs
+            ])
             status, x = verif_in.check()
             if status:
                 print(' CE found: %s' % x)
@@ -58,8 +62,7 @@ class Learner:
                 print(' No CE found')
 
             print(' - Verify Outside...', end='', flush=True)
-            verif_out.afs_inside.clear()
-            verif_out.afs_inside.extend(afs_inv)
+            verif_out.rin = Region([pinv])
             status, x = verif_out.check()
             if status:
                 print(' CE found: %s' % x)
@@ -69,8 +72,7 @@ class Learner:
                 print(' No CE found')
 
             print(' - Verify Transition...', end='', flush=True)
-            verif_trans.afs_inv.clear()
-            verif_trans.afs_inv.extend(afs_inv)
+            verif_trans.rinv = Region([pinv])
             status, x, y = verif_trans.check()
             if status:
                 print(' CE found: %s -> %s' % (x, y))
@@ -81,4 +83,4 @@ class Learner:
                 break
 
         print('Valid CLF')
-        return afs_inv
+        return pinv

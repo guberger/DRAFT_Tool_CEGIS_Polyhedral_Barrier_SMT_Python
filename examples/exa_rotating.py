@@ -2,12 +2,9 @@ from math import cos, pi, sin
 from context import src
 import numpy as np
 from matplotlib import pyplot as plt
-from src.polyhedra import AffForm
+from src.polyhedra import AffForm, Polyhedron, Region
 from src.system import Piece
 from src.learner import Learner
-
-# 2D, 3 affine functions
-lear = Learner(2, 5, False, 0.15, None, 100, False, 10)
 
 def rot_mat(theta):
     return np.array([[cos(theta), -sin(theta)], [+sin(theta), cos(theta)]])
@@ -16,24 +13,32 @@ alpha = 0.5
 theta = pi/5
 A = alpha*rot_mat(theta)
 b = np.array([0, 0])
-lear.pieces.append(Piece(A, b))
+piece = Piece(A, b, Region([Polyhedron([])]))
 
 # init Rect halfside rho
 rho = 0.25
-lear.afs_init.append(AffForm(np.array([-1, 0]), -rho))
-lear.afs_init.append(AffForm(np.array([+1, 0]), -rho))
-lear.afs_init.append(AffForm(np.array([0, -1]), -rho))
-lear.afs_init.append(AffForm(np.array([0, +1]), -rho))
-
+rinit = Region([
+    Polyhedron([
+        AffForm(np.array([-1, 0]), -rho),
+        AffForm(np.array([+1, 0]), -rho),
+        AffForm(np.array([0, -1]), -rho),
+        AffForm(np.array([0, +1]), -rho),
+    ]),
+])
 # safe Rect halfside 4
-lear.afs_safe.append(AffForm(np.array([-1, 0]), -2))
-lear.afs_safe.append(AffForm(np.array([+1, 0]), -2))
-lear.afs_safe.append(AffForm(np.array([0, -1]), -2))
-lear.afs_safe.append(AffForm(np.array([0, +1]), -2))
+runsafe = Region([
+    Polyhedron([AffForm(np.array([-1, 0]), +2)]),
+    Polyhedron([AffForm(np.array([+1, 0]), +2)]),
+    Polyhedron([AffForm(np.array([0, -1]), +2)]),
+    Polyhedron([AffForm(np.array([0, +1]), +2)]),
+])
 
-afs = lear.find_invariant(1000)
+lear = Learner(2, 5, False, 0.15, None, 100, False, 10,
+               [piece], rinit, runsafe)
 
-print(afs)
+pinv = lear.find_invariant(1000)
+
+print(pinv)
 
 fig = plt.figure()
 ax = plt.axes(xlim=(-2.1, 2.1), ylim=(-2.1, 2.1))
@@ -49,7 +54,7 @@ for i, x1 in enumerate(rs):
         y = A @ x
         z_opt = -float('inf')
         w_opt = -float('inf')
-        for af in afs:
+        for af in pinv.afs:
             z = af.eval(x)
             z_opt = max(z_opt, z)
             w = af.eval(y)

@@ -1,6 +1,6 @@
 import numpy as np
 import z3
-from .polyhedra import AffForm
+from .polyhedra import AffForm, Polyhedron
 from .z3utils import get_val_int, get_val_real
 
 class Generator:
@@ -28,13 +28,16 @@ class Generator:
         ctx = z3.Context()
         solver = z3.Solver(ctx=ctx)
         make_var = z3.Int if self.isint else z3.Real
-        afs = [AffForm(
-            np.array([
-                make_var("a" + str(k) + "[" + str(i) + "]", ctx=ctx)
-                for i in range(self.dim)
-            ]),
-            make_var("b" + str(k), ctx=ctx)
-        ) for k in range(self.naf)]
+        afs = [
+            AffForm(
+                np.array([
+                    make_var("a" + str(k) + "[" + str(i) + "]", ctx=ctx)
+                    for i in range(self.dim)
+                ]),
+                make_var("b" + str(k), ctx=ctx)
+            )
+            for k in range(self.naf)
+        ]
         
         for af in afs:
             for ai in af.a:
@@ -51,7 +54,7 @@ class Generator:
             cons = []
             for af in afs:
                 cons.append(af.eval(x) > +self.eps)
-            solver.add(z3.Or(cons))
+            solver.add(z3.Or(cons, ctx))
 
         for (x, y) in self.xys_transition:
             cons_x = []
@@ -59,7 +62,7 @@ class Generator:
             for af in afs:
                 cons_x.append(af.eval(x) <= +self.eps)
                 cons_y.append(af.eval(y) <= -self.eps)
-            solver.add(z3.Implies(z3.And(cons_x), z3.And(cons_y)))
+            solver.add(z3.Implies(z3.And(cons_x, ctx), z3.And(cons_y, ctx)))
 
         res = solver.check()
         if res == z3.sat:
@@ -69,6 +72,6 @@ class Generator:
                 np.array([get_val(model, ai) for ai in af.a]),
                 get_val(model, af.beta)
             ) for af in afs]
-            return True, afs_opt
+            return True, Polyhedron(afs_opt)
         else:
             return False, None
